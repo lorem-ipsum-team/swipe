@@ -15,6 +15,7 @@ type Repo struct {
 	log  *slog.Logger
 }
 
+//go:generate sqlc generate
 func NewRepo(ctx context.Context, log *slog.Logger, connString string) (*Repo, error) {
 	log = log.WithGroup("postgres_repo")
 	log.Info("connect to db", slog.Any("connection string", logger.Secret(connString)))

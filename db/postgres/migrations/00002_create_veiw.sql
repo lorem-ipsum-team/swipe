@@ -7,7 +7,7 @@ SELECT
 FROM 
     swipe_db s1
 WHERE 
-    s1.initiator_resp = TRUE AND s2.initiator_resp = TRUE;
+    s1.initiator_resp = TRUE AND s1.initiator_resp = TRUE;
 -- +goose StatementEnd
 
 -- +goose Down

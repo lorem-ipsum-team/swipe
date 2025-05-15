@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -21,14 +22,21 @@ var (
 func (s Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
+		s.log.WarnContext(r.Context(), "no auth user", slog.Any("error", err))
 		errStatusCode(w, http.StatusUnauthorized)
+
+		return
 	}
 
 	req := createSwipeReq{} //nolint:exhaustruct
 
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		s.log.DebugContext(r.Context(), "could not unmarshal swipe", slog.Any("error", err))
+
 		errStatusCode(w, http.StatusBadRequest)
+
+		return
 	}
 
 	err = s.swipesUC.CreateSwipe(r.Context(),
@@ -39,7 +47,10 @@ func (s Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 			TargetResp: nil,
 		})
 	if err != nil {
+		s.log.ErrorContext(r.Context(), "failed to create swipe", slog.Any("error", err))
 		errStatusCode(w, http.StatusInternalServerError)
+
+		return
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -48,14 +59,20 @@ func (s Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 func (s Server) handleGetSwipes(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
+		s.log.WarnContext(r.Context(), "no auth user", slog.Any("error", err))
 		errStatusCode(w, http.StatusUnauthorized)
+
+		return
 	}
 
 	pag := pagination(r)
 
 	swipes, err := s.swipesUC.MySwipes(r.Context(), userID, pag)
 	if err != nil {
+		s.log.ErrorContext(r.Context(), "failed to get swipes", slog.Any("error", err))
 		errStatusCode(w, http.StatusInternalServerError)
+
+		return
 	}
 
 	ids := make([]uuid.UUID, 0, len(swipes))
@@ -69,14 +86,20 @@ func (s Server) handleGetSwipes(w http.ResponseWriter, r *http.Request) {
 func (s Server) handleGetMatches(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
+		s.log.WarnContext(r.Context(), "no auth user", slog.Any("error", err))
 		errStatusCode(w, http.StatusUnauthorized)
+
+		return
 	}
 
 	pag := pagination(r)
 
 	matches, err := s.matchesUC.Matches(r.Context(), userID, pag)
 	if err != nil {
+		s.log.ErrorContext(r.Context(), "failed to get matches", slog.Any("error", err))
 		errStatusCode(w, http.StatusInternalServerError)
+
+		return
 	}
 
 	ids := make([]uuid.UUID, 0, len(matches))

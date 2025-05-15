@@ -49,5 +49,34 @@ func (s Server) registerHandlers() {
 
 	mux.HandleFunc("GET /healthy", s.handleHealthy)
 
-	s.Server.Handler = mux
+	s.Server.Handler = loggingMiddleware(mux, s.log)
+}
+
+func loggingMiddleware(next http.Handler, log *slog.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		next.ServeHTTP(lrw, r)
+
+		log.DebugContext(r.Context(), "request", slog.Group(
+			"request",
+			slog.String("method", r.Method),
+			slog.String("path", r.URL.Path),
+			slog.Int("status", lrw.statusCode),
+			slog.Duration("dur", time.Since(start)),
+			slog.String("remote_ip", r.RemoteAddr),
+			slog.String("user_agent", r.UserAgent()),
+		))
+	})
+}
+
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
 }

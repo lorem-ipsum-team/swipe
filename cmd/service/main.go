@@ -35,7 +35,7 @@ func main() {
 
 	postgresRepo, err := postgres_repo.NewRepo(ctx, log, db_url)
 	if err != nil {
-		log.ErrorContext(ctx, "failed to create postgres_repo")
+		log.ErrorContext(ctx, "failed to create postgres_repo", slog.Any("error", err))
 
 		return
 	}
@@ -44,7 +44,7 @@ func main() {
 
 	rabbitRepo, err := rabbit_repo.New(ctx, log, rabbit_url)
 	if err != nil {
-		log.ErrorContext(ctx, "failed to create rabbit_repo")
+		log.ErrorContext(ctx, "failed to create rabbit_repo", slog.Any("error", err))
 
 		return
 	}
@@ -60,7 +60,7 @@ func main() {
 
 		if err := server.Server.ListenAndServe(); err != nil &&
 			!errors.Is(err, http.ErrServerClosed) {
-			log.ErrorContext(ctx, "Server crashed")
+			log.ErrorContext(ctx, "Server crashed", slog.Any("error", err))
 		}
 	}()
 
@@ -71,11 +71,11 @@ func main() {
 	log.InfoContext(shutdownCtx, "Shutting down...")
 
 	if err := server.Server.Shutdown(shutdownCtx); err != nil {
-		log.ErrorContext(shutdownCtx, "Graceful shutdown failed")
+		log.ErrorContext(shutdownCtx, "Graceful shutdown failed", slog.Any("error", err))
 		log.Info("Shutting down forcefully...")
 
 		if err := server.Server.Close(); err != nil {
-			log.Error("Forceful shutdown failed")
+			log.Error("Forceful shutdown failed", slog.Any("error", err))
 		}
 	}
 
