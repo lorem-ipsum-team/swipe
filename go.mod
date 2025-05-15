@@ -6,7 +6,9 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.2
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.4
+	github.com/lmittmann/tint v1.0.7
 	github.com/pressly/goose/v3 v3.24.2
+	github.com/rabbitmq/amqp091-go v1.10.0
 )
 
 require (

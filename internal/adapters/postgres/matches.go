@@ -8,14 +8,15 @@ import (
 	"github.com/lorem-ipsum-team/swipe/internal/domain"
 )
 
-func (r *Repo) GetMatches(ctx context.Context, init domain.UserID, offset, limit int) ([]domain.Match, error) {
+func (r *Repo) GetMatches(ctx context.Context, init domain.UserID, pag domain.Pagination) ([]domain.Match, error) {
 	q := gen.New(r.pool)
 
 	dtoMatches, err := q.Matches(ctx,
 		gen.MatchesParams{
 			InitiatorID: uuid.UUID(init),
-			Limit:       int32(limit),   //nolint:gosec
-			Offset:      int32(offset)}) //nolint:gosec
+			Limit:       int32(pag.Limit),  //nolint:gosec
+			Offset:      int32(pag.Offset), //nolint:gosec
+		})
 	if err != nil {
 		return nil, err
 	}

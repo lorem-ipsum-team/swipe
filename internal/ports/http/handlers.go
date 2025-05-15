@@ -18,7 +18,7 @@ var (
 	errInvalidClaims = errors.New("invalid token claims")
 )
 
-func (s *Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
+func (s Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
 		errStatusCode(w, http.StatusUnauthorized)
@@ -31,7 +31,13 @@ func (s *Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 		errStatusCode(w, http.StatusBadRequest)
 	}
 
-	err = s.swipesUC.CreateSwipe(r.Context(), userID, domain.UserID(req.Target), req.Like)
+	err = s.swipesUC.CreateSwipe(r.Context(),
+		domain.Swipe{
+			Init:       userID,
+			Target:     domain.UserID(req.Target),
+			InitResp:   &req.Like,
+			TargetResp: nil,
+		})
 	if err != nil {
 		errStatusCode(w, http.StatusInternalServerError)
 	}
@@ -39,15 +45,15 @@ func (s *Server) handleCreateSwipe(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func (s *Server) handleGetSwipes(w http.ResponseWriter, r *http.Request) {
+func (s Server) handleGetSwipes(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
 		errStatusCode(w, http.StatusUnauthorized)
 	}
 
-	offset, limit := getOffsetLimit(r)
+	pag := pagination(r)
 
-	swipes, err := s.swipesUC.MySwipes(r.Context(), userID, offset, limit)
+	swipes, err := s.swipesUC.MySwipes(r.Context(), userID, pag)
 	if err != nil {
 		errStatusCode(w, http.StatusInternalServerError)
 	}
@@ -60,15 +66,15 @@ func (s *Server) handleGetSwipes(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, ids)
 }
 
-func (s *Server) handleGetMatches(w http.ResponseWriter, r *http.Request) {
+func (s Server) handleGetMatches(w http.ResponseWriter, r *http.Request) {
 	userID, err := getJWTUserID(r)
 	if err != nil {
 		errStatusCode(w, http.StatusUnauthorized)
 	}
 
-	offset, limit := getOffsetLimit(r)
+	pag := pagination(r)
 
-	matches, err := s.matchesUC.Matches(r.Context(), userID, offset, limit)
+	matches, err := s.matchesUC.Matches(r.Context(), userID, pag)
 	if err != nil {
 		errStatusCode(w, http.StatusInternalServerError)
 	}
@@ -86,30 +92,30 @@ func (s *Server) handleGetMatches(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, ids)
 }
 
-func (s *Server) handleHealthy(w http.ResponseWriter, r *http.Request) {
+func (s Server) handleHealthy(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func getOffsetLimit(r *http.Request) (int, int) {
-	const (
-		defaultPage  = 0
-		defaultLimit = 20
-	)
+func pagination(r *http.Request) domain.Pagination {
+	pag := domain.Pagination{
+		Offset: 0,
+		Limit:  25, //nolint:mnd
+	}
 
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
 
 	page, err := strconv.Atoi(pageStr)
-	if err != nil || page < 0 {
-		page = defaultPage
+	if err == nil && page >= 0 {
+		pag.Offset = page
 	}
 
 	limit, err := strconv.Atoi(limitStr)
-	if err != nil || limit <= 0 {
-		limit = defaultLimit
+	if err == nil && limit > 0 {
+		pag.Limit = limit
 	}
 
-	return page, limit
+	return pag
 }
 
 func getJWTUserID(r *http.Request) (domain.UserID, error) {
