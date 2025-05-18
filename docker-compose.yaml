@@ -11,6 +11,7 @@ services:
       - DB_URL=postgres://postgres:postgres@postgres:5432/swipes
       - LISTEN_ADDR=0.0.0.0:8080
       - RABBIT_URL=amqp://rabbit:rabbit@rabbitmq:5672/
+      - SWIPE_QUEUE=swipes
     ports:
       - "8080:8080"
     depends_on:
@@ -43,8 +44,6 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
     networks:
       - app-network
 
@@ -61,13 +60,12 @@ services:
       timeout: 10s
       retries: 3
     ports:
-      - "5672:5672"  # AMQP port
       - "15672:15672"  # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - app-network
-
+ 
 volumes:
   postgres_data:
   rabbitmq_data:
