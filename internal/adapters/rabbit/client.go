@@ -14,14 +14,14 @@ import (
 )
 
 const (
-	queueName  = "swipes"
 	msgTimeout = 5 * time.Second
 )
 
 type Repo struct {
-	conn    *amqp.Connection
-	channel *amqp.Channel
-	log     *slog.Logger
+	conn       *amqp.Connection
+	channel    *amqp.Channel
+	log        *slog.Logger
+	swipeQueue string
 }
 
 type Swipe struct {
@@ -30,7 +30,7 @@ type Swipe struct {
 	Like   bool      `json:"like"`
 }
 
-func New(ctx context.Context, log *slog.Logger, url string) (*Repo, error) {
+func New(ctx context.Context, log *slog.Logger, url, swipeQueue string) (*Repo, error) {
 	log = log.WithGroup("rabbit_repo")
 	log.Info("connect to rabbit", slog.Any("connection string", logger.Secret(url)))
 
@@ -45,7 +45,7 @@ func New(ctx context.Context, log *slog.Logger, url string) (*Repo, error) {
 	}
 
 	_, err = channel.QueueDeclare(
-		queueName,
+		swipeQueue,
 		false,
 		false,
 		false,
@@ -57,9 +57,10 @@ func New(ctx context.Context, log *slog.Logger, url string) (*Repo, error) {
 	}
 
 	repo := &Repo{
-		conn:    conn,
-		channel: channel,
-		log:     log,
+		conn:       conn,
+		channel:    channel,
+		log:        log,
+		swipeQueue: swipeQueue,
 	}
 
 	go func() {
@@ -103,7 +104,7 @@ func (r *Repo) PublishSwipe(ctx context.Context, swipe domain.Swipe) error {
 	err = r.channel.PublishWithContext(
 		ctx,
 		"",
-		queueName,
+		r.swipeQueue,
 		false,
 		false,
 		amqp.Publishing{ //nolint:exhaustruct

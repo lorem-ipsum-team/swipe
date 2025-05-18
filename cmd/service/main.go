@@ -41,8 +41,9 @@ func main() {
 	}
 
 	rabbit_url := os.Getenv("RABBIT_URL")
+	swipeQueue := os.Getenv("SWIPE_QUEUE")
 
-	rabbitRepo, err := rabbit_repo.New(ctx, log, rabbit_url)
+	rabbitRepo, err := rabbit_repo.New(ctx, log, rabbit_url, swipeQueue)
 	if err != nil {
 		log.ErrorContext(ctx, "failed to create rabbit_repo", slog.Any("error", err))
 
