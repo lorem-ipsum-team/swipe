@@ -39,7 +39,9 @@ SELECT
     target_resp,
     created_at
 FROM swipe_db
-WHERE target_id = $1 AND initiator_resp = TRUE
+WHERE target_id = $1 
+    AND initiator_resp = TRUE
+    AND target_resp IS NULL
 ORDER BY created_at DESC LIMIT $2 OFFSET $3
 `
 
